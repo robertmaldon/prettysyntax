@@ -8,7 +8,7 @@ Add the prettysytax.css and prettysyntax.js files to your web server.
 
 Include the prettysyntax CSS file towards the top of your web page. e.g.
 
-  <link rel="stylesheet" type="text/css" href="/stylesheets/prettysyntax.css"></style>
+  <link rel="stylesheet" type="text/css" href="/stylesheets/prettysyntax.css"/>
 
 Include the prettysyntax javascript file towards the footer of your web
 page. e.g.
