@@ -1,0 +1,393 @@
+<link rel="stylesheet"  type="text/css" href="../prettysyntax.css"></style>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus
+vitae nulla quis ante vehicula pretium faucibus nec sem. Integer
+gravida rhoncus sem, vitae ornare ante egestas ac. Pellentesque sapien
+sem, bibendum a varius ac, pharetra id ante. Nulla sit amet rhoncus
+tellus. Cum sociis natoque penatibus et magnis dis parturient montes,
+nascetur ridiculus mus. Curabitur viverra euismod nisi, quis
+sollicitudin ante pharetra ut. Fusce tempor interdum tincidunt.
+Vestibulum imperdiet, nisi a faucibus fermentum, magna libero feugiat
+ante, a scelerisque elit odio id felis. Quisque massa urna, posuere sit
+amet mattis ut, viverra et nulla. Praesent fermentum, augue at mattis
+interdum, diam massa aliquet neque, ac vulputate justo felis tristique
+justo.</p>
+
+<p>Nunc consectetur mi a eros imperdiet pulvinar. Donec ornare volutpat
+malesuada. Mauris mattis elementum imperdiet. Fusce vehicula lectus sed
+ipsum pellentesque venenatis. Maecenas neque sapien, bibendum eu
+placerat ac, iaculis eu augue. Fusce mauris turpis, pulvinar quis
+euismod nec, semper vitae tellus. Nam placerat justo non sapien
+consequat ullamcorper. Donec tempus vestibulum magna nec viverra. Etiam
+elementum leo non nunc commodo id facilisis nisl luctus. Pellentesque
+habitant morbi tristique senectus et netus et malesuada fames ac turpis
+egestas. Pellentesque et felis non nisl ultricies vulputate eu sed
+massa. Praesent semper feugiat lacus id congue. Nulla posuere euismod
+porttitor.</p>
+
+<pre name="code" class="javascript">
+/**
+ * Flexible Javascript Unittest Framework
+ *
+ *http://code.google.com/p/flexible-javascript-unittest/
+ *author:pickerel@gmail.com
+ *
+ * example:
+ *
+        &lt;script&gt;
+                function xhttp(url, callback)
+                {
+                        if (typeof XMLHttpRequest != 'undefined') {
+                                httpRequest = new XMLHttpRequest();
+                        }
+                        else if (typeof ActiveXObject != 'undefined') {
+                                httpRequest = new ActiveXObject('Microsoft.XMLHTTP');
+                        }
+                        httpRequest.open('GET', url, true);
+                        httpRequest.onreadystatechange = function () {
+                                if (httpRequest.readyState == 4) {
+                                        callback(httpRequest.responseText);
+                                }
+                        };
+                        httpRequest.send(null);                
+                }      
+                window.onload = function(){
+                        var test1 = new testcase(&quot;my firest test&quot;, {
+                                setup: function(){this.val = &quot;abc&quot;;},
+                                teardown: function(){this.val = null;alert(&quot;test completed.&quot;);},
+                                test_get_name: function(){
+                                        this.assert_equal(&quot;abb&quot;, this.val, &quot;test get name&quot;);
+                                        this.assert_not_equal(&quot;abb&quot;, this.val);
+                                },
+                                test_get_name1: function(){
+                                        this.assert(false);
+                                        throw &quot;this is an exception&quot;;
+                                },
+                                async_test_google: function()
+                                {
+                                        var self = this;                                        
+                                        xhttp(&quot;http://www.google.com&quot;, function(html){
+                                                self.assert(html.indexOf(&quot;google&quot;) &gt; 0);
+                                                self.complete();
+                                        });                                    
+                                },
+                                async_test_yahoo: function()
+                                {
+                                        var self = this;                                        
+                                        xhttp(&quot;http://www.yahoo.com&quot;, function(html){
+                                                self.assert(html, &quot;google&quot;);
+                                                self.assert(html.indexOf(&quot;yahoo&quot;) &gt; 0);
+                                                self.complete();
+                                        });                                    
+                                }                      
+                        });
+                       
+                        var test2 = new testcase(&quot;my second test&quot;, {
+                                test_name: function()
+                                {
+                                        this.assert(false);
+                                }
+                        });                            
+                        test1.run();
+                        test2.run();
+                };
+        &lt;/script&gt;
+ */
+
+
+// default ui to display the result
+var testcase_ui = function(test){
+        this.test = test;
+        this.on_inited = function(){
+                var body = document.getElementsByTagName(&quot;body&quot;)[0];
+                var div = document.createElement('div');
+                div.setAttribute(&quot;id&quot;, test.name);
+                body.appendChild(div);
+                div.innerHTML = &quot;&lt;h3&gt;[&quot; + test.name +&quot;]  -- Test Results&lt;/h3&gt;&quot; +
+                                                &quot;&lt;ul id='&quot; + test.name + &quot;_results'&gt;&lt;/ul&gt;&quot;;              
+        };
+        this.on_assert_success = function(assert_name, method_name, message){
+        if (message == undefined || message == null)message = assert_name ;        
+                var assert_results = this.get_or_create_method_div(method_name);
+                var result = document.createElement('li');
+                result.setAttribute(&quot;style&quot;, &quot;color:green;&quot;);
+                assert_results.appendChild(result);
+                result.innerHTML = message + &quot; success&lt;/font&gt;&quot;;
+        };
+        this.on_assert_failed = function(assert_name, method_name, default_message, message){
+                var assert_results = this.get_or_create_method_div(method_name);
+                var result = document.createElement('li');
+                result.setAttribute(&quot;style&quot;, &quot;color:red;&quot;);
+                assert_results.appendChild(result);
+                result.innerHTML = (assert_name + &quot; failed, &quot; + default_message + this.get_message(message) +&quot;)&lt;/font&gt;&quot;);                      
+        };
+        this.on_error = function(name, e){
+                var assert_results = this.get_or_create_method_div(name);
+                var result = document.createElement('li');
+                result.setAttribute(&quot;style&quot;, &quot;color:red;&quot;);
+                assert_results.appendChild(result);
+                result.innerHTML = (&quot;error&lt;b&gt;:&quot; + e +&quot;&lt;/font&gt;&quot;);
+        };
+        this.on_completed = function(test){};  
+        this.get_message =  function(msg)
+        {
+                if (msg == undefined || msg == null)return &quot;&quot;;
+                return &quot;(&quot; + msg + &quot;)&quot;;
+        };
+        this.get_or_create_method_div = function(method_name)
+        {
+                var parent = document.getElementById(this.test.name + &quot;_results&quot;);
+                var e = document.getElementById(this.test.name + &quot;_&quot; + method_name);
+                if (e == null)
+                {
+                        var li = document.createElement(&quot;li&quot;);
+                        parent.appendChild(li);
+                        li.innerHTML = &quot;&lt;b&gt;&quot; +method_name + &quot;&lt;/b&gt;&lt;hr/&gt;&quot;;
+                       
+                        var e = document.createElement(&quot;ol&quot;);
+                        e.setAttribute(&quot;id&quot;, this.test.name + &quot;_&quot; + method_name)
+                        li.appendChild(e);
+                }
+                return e;
+        };
+}
+
+var testcase_assertion = function( test, method){this.test_method = method; this.test = test;};
+
+testcase_assertion.prototype.failed = function(name, default_message, message){
+        this.test.on_assert_failed(name, this.test_method, default_message, message);
+};
+testcase_assertion.prototype.success = function(name,  message){
+        this.test.on_assert_success(name, this.test_method,  message);
+};
+
+testcase_assertion.prototype.do_assert = function(name, bool, message, default_message)
+{
+        try
+        {
+                if (bool)this.success(name,  message);
+                       
+                else
+                {
+                        this.failed(name, default_message, message);
+                }              
+        }
+        catch(e)
+        {
+                this.failed(name, e, message);
+        }
+};
+testcase_assertion.prototype.assert = function(bool, msg)
+{
+        var default_msg = &quot;expected:true, actual:&quot;  + bool;
+        //if(msg != null)
+        //{
+        //      default_msg = msg;
+        //      msg = null;
+        //}
+        this.do_assert(&quot;assert&quot;, bool,  msg, default_msg);
+};
+testcase_assertion.prototype.assert_equal = function(expect, actual, msg)
+{
+        var default_msg =  expect + &quot; != &quot; + actual;
+        var bool = (expect == actual);
+        this.do_assert(&quot;assert_equal&quot;, bool, msg, default_msg);
+};
+testcase_assertion.prototype.assert_not_equal = function(expect, actual, msg)
+{
+        var default_msg =  expect + &quot; == &quot; + actual;
+        var bool = (expect != actual);
+        this.do_assert(&quot;assert_not_equal&quot;, bool, msg, default_msg);    
+};
+testcase_assertion.prototype.assert_null = function(actual, msg)
+{
+        var default_msg =  &quot;actual is not null&quot;;
+        var bool = (actual == null);
+        this.do_assert(&quot;assert_null&quot;, bool, msg, default_msg);  
+};
+testcase_assertion.prototype.assert_not_null = function(actual, msg)
+{
+        var default_msg =  &quot;actual is null&quot;;
+        var bool = (actual != null);
+        this.do_assert(&quot;assert_not_null&quot;, bool, msg, default_msg);      
+};
+testcase_assertion.prototype.assert_match = function(value, pattern, msg)
+{
+        var default_msg = &quot;value &quot; + value + &quot; not match with regex &quot; + pattern;
+        var bool = (new RegExp(pattern).exec(value) );
+        this.do_assert(&quot;assert_match&quot;, bool, msg, default_msg);
+};
+testcase_assertion.prototype.assert_not_match = function(value, pattern, msg)
+{
+        var default_msg = &quot;value &quot; + value + &quot; match with regex &quot; + pattern;
+        var bool = !(new RegExp(pattern).exec(value) );
+        this.do_assert(&quot;assert_not_match&quot;, bool, msg, default_msg);    
+};
+ 
+
+var testcase_context = function(global_context, test, method_name){
+        //attach assert methods to the test method.
+        var astn = new testcase_assertion();
+        for (var m in astn)
+        {
+                var mt = astn[m];
+                if (typeof mt == 'function' &amp;&amp; m.indexOf(&quot;assert&quot;) == 0)
+                {
+                        var f = function(){};
+                        f.mt = mt;
+                        f.mn = method_name;
+                        f.m = m;
+                        var self = this;
+                        var tmpfunc = function()
+                        {
+                                var telf = this;
+                                self[telf.m] = function(){
+                                        var a = new testcase_assertion(test, telf.mn);                          
+                                        telf.mt.apply(a, arguments);
+                                }
+                        };
+                        tmpfunc.apply(f, arguments);
+                }
+        }
+        for (var f in global_context)
+        {
+                this[f] = global_context[f];
+        }
+};
+
+
+var testcase = function(name, opts, ui){
+        this.name = name;
+        this.setup = null;
+        this.teardown = null;
+        this.failed = 0;
+        this.passed = 0;
+        for (var f in opts)
+        {
+                this[f] = opts[f];
+        }
+        if (ui == null) this.ui = new testcase_ui(this);
+};
+testcase.prototype.get_name = function(){return &quot;[&quot;  + this.name + &quot;]&quot;;};
+testcase.prototype.run = function()
+{
+        if (this.ui.on_inited != null)this.ui.on_inited();
+        var global_context = {};
+        if ( this.setup != undefined &amp;&amp; this.setup != null){
+                try
+                {
+                        this.setup.apply(global_context, arguments)
+                }catch(e)
+                {              
+                        this.on_error(&quot;setup&quot;, e);
+                        return;
+                }
+        };                      
+        var test_funcs = [];
+        var async_test_funcs = [];
+
+        for(var m in this)
+        {
+                if (typeof this[m] == 'function')
+                {
+                        var minfo = {name: m, method: this[m]};
+                        if (m.indexOf(&quot;async_test_&quot;)  == 0)
+                                async_test_funcs.push(minfo);
+                        else if (m.indexOf(&quot;test_&quot;) == 0 )
+                                test_funcs.push(minfo);
+                }                      
+        }
+        // run the async tests.
+        var async_test_idx = 0;
+        var teardowned = false;
+        var self = this;
+        var run_async_tests = function()
+        {
+                var f = async_test_funcs[async_test_idx];                      
+               
+                var ctx = new testcase_context(global_context, self, f.name);          
+                //add complete method for the async test.
+                ctx[&quot;complete&quot;] = function(){
+                        if (async_test_idx == async_test_funcs.length - 1)
+                        {
+                                self._run_test(test_funcs, global_context);
+                                self._run_teardown(global_context);    
+                        }
+                        else
+                        {
+                                async_test_idx++;
+                                run_async_tests();
+                                self.ui.on_completed(self);
+                        }
+                }
+                try
+                {
+                        f.method.call(ctx);                    
+                }
+                catch(e)
+                {
+                        self.on_error(f.name, e);
+                        ctx.complete();
+                }
+        }
+        if (async_test_funcs.length &gt; 0)
+                run_async_tests();
+        else
+        {              
+                this._run_test(test_funcs, global_context);
+                this._run_teardown(global_context);
+                this.ui.on_completed(this);            
+        }
+};
+
+testcase.prototype._run_test = function(test_funcs, global_context){
+        for(var i = 0; i &lt; test_funcs.length; i++)
+        {
+                var f = test_funcs[i]
+                try{
+                        var ctx = new testcase_context(global_context, this, f.name);
+                        f.method.call(ctx);
+                }
+                catch(e){
+                        this.on_error(f.name, e);
+                }
+        }
+};
+testcase.prototype._run_teardown = function(global_context){
+        if (this.teardown != undefined &amp;&amp; this.teardown != null){
+                try
+                {
+                        this.teardown.call(global_context);
+                        return;
+                }catch(e)
+                {
+                        this.on_error(&quot;teardown&quot;, e);
+                }
+        };      
+};
+testcase.prototype.on_assert_success = function(assert_name, method_name, message){
+        this.ui.on_assert_success(assert_name, method_name, message);
+        };
+testcase.prototype.on_assert_failed = function(assert_name, method_name, default_message, message){
+        this.ui.on_assert_failed(assert_name, method_name, default_message, message);
+        };
+testcase.prototype.on_error = function(name, e){
+        this.ui.on_error(name, e);
+};
+</pre>
+
+<p>Etiam eget augue et odio vulputate volutpat eget a nunc. Suspendisse
+nisl nunc, tempor ut luctus a, tincidunt ac metus. Aliquam interdum
+pellentesque nisi sed vehicula. Vivamus auctor ultrices erat sed
+mollis. Donec feugiat lacinia sapien convallis mattis. Donec ligula
+purus, porta at tincidunt at, gravida sit amet enim. Donec malesuada
+laoreet ante, non gravida lectus ultrices sed. Nunc in urna mi. Mauris
+sollicitudin vestibulum est, nec feugiat elit imperdiet vel. Sed
+facilisis commodo ligula non rhoncus. Integer commodo dictum dolor ac
+rutrum. Aenean non vulputate ligula. Aenean elit magna, ullamcorper eu
+tempus ac, gravida sed turpis. Quisque sit amet lectus venenatis neque
+interdum sollicitudin. Praesent venenatis, ipsum eu gravida porta,
+lacus massa dictum nibh, eu imperdiet ante nisl vel mauris. Aenean vel
+tincidunt diam.</p>
+
+<script type="text/javascript" src="../prettysyntax.js"></script>

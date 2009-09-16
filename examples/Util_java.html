@@ -1,0 +1,269 @@
+<link rel="stylesheet"  type="text/css" href="../prettysyntax.css"></style>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus
+vitae nulla quis ante vehicula pretium faucibus nec sem. Integer
+gravida rhoncus sem, vitae ornare ante egestas ac. Pellentesque sapien
+sem, bibendum a varius ac, pharetra id ante. Nulla sit amet rhoncus
+tellus. Cum sociis natoque penatibus et magnis dis parturient montes,
+nascetur ridiculus mus. Curabitur viverra euismod nisi, quis
+sollicitudin ante pharetra ut. Fusce tempor interdum tincidunt.
+Vestibulum imperdiet, nisi a faucibus fermentum, magna libero feugiat
+ante, a scelerisque elit odio id felis. Quisque massa urna, posuere sit
+amet mattis ut, viverra et nulla. Praesent fermentum, augue at mattis
+interdum, diam massa aliquet neque, ac vulputate justo felis tristique
+justo.</p>
+
+<p>Nunc consectetur mi a eros imperdiet pulvinar. Donec ornare volutpat
+malesuada. Mauris mattis elementum imperdiet. Fusce vehicula lectus sed
+ipsum pellentesque venenatis. Maecenas neque sapien, bibendum eu
+placerat ac, iaculis eu augue. Fusce mauris turpis, pulvinar quis
+euismod nec, semper vitae tellus. Nam placerat justo non sapien
+consequat ullamcorper. Donec tempus vestibulum magna nec viverra. Etiam
+elementum leo non nunc commodo id facilisis nisl luctus. Pellentesque
+habitant morbi tristique senectus et netus et malesuada fames ac turpis
+egestas. Pellentesque et felis non nisl ultricies vulputate eu sed
+massa. Praesent semper feugiat lacus id congue. Nulla posuere euismod
+porttitor.</p>
+
+<pre name="code" class="java">
+/*
+ * Copyright (C) 2007-2008 Mihai Preda.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.javia.arity;
+
+/**
+   Contains static helper methods for formatting double values.
+ */
+public class Util {
+    /** Returns a number which is an approximation of v (within maxError)
+       and which has fewer digits in base-10).
+       @param value the value to be approximated
+       @param maxError the maximum deviation from value
+       @return an approximation with a more compact base-10 representation.
+    */
+    public static double shortApprox(double value, double maxError) {
+        final double v = Math.abs(value);
+        final double tail = MoreMath.intExp10(MoreMath.intLog10(Math.abs(maxError)));
+        final double ret = Math.floor(v/tail +.5)*tail;
+        return (value &lt; 0) ? -ret : ret;
+    }
+
+    public static final int LEN_UNLIMITED = 100;
+    /**
+      Returns an approximation with no more than maxLen chars.
+      @param str the value to truncate (e.g. &quot;-2.898983455E20&quot;)
+      @param maxLen the maximum number of characters in the returned string
+      @return a truncation no longer then maxLen (e.g. &quot;-2.8E20&quot; for maxLen=7).
+     */
+    public static String sizeTruncate(String str, int maxLen) {
+        if (maxLen == LEN_UNLIMITED) {
+            return str;
+        }
+        int ePos = str.lastIndexOf('E');
+        String tail = (ePos != -1) ? str.substring(ePos) : &quot;&quot;;
+        int tailLen = tail.length();
+        int maxHeadLen = maxLen - tailLen;
+        return str.substring(0, Math.min(str.length()-tailLen, maxHeadLen)) + tail;
+    }
+
+    public static final int FLOAT_PRECISION  = -1;
+    /**
+       Rounds by dropping roundingDigits of double precision
+       (similar to 'hidden precision digits' on calculators),
+       and formats to String.
+       @param v the value to be converted to String
+       @param roundingDigits the number of 'hidden precision' digits (e.g. 2).
+       @return a String representation of v
+     */
+    public static String doubleToString(final double v, final int roundingDigits) {
+        final double absv = Math.abs(v);
+        final String str = roundingDigits == FLOAT_PRECISION ? Float.toString((float) absv) : Double.toString(absv);
+        StringBuffer buf = new StringBuffer(str);
+        int roundingStart = (roundingDigits &lt;= 0 || roundingDigits &gt; 13) ? 17 : (15 - roundingDigits);
+
+        int ePos = str.lastIndexOf('E');
+        int exp  =  (ePos != -1) ? Integer.parseInt(str.substring(ePos + 1)) : 0;
+        if (ePos != -1) {
+            buf.setLength(ePos);
+        }
+        int len = buf.length();
+
+        //remove dot
+        int dotPos;
+        for (dotPos = 0; dotPos &lt; len &amp;&amp; buf.charAt(dotPos) != '.';) {
+            ++dotPos;
+        }
+        exp += dotPos;
+        if (dotPos &lt; len) {
+            buf.deleteCharAt(dotPos);
+            --len;
+        }
+
+        //round
+        for (int p = 0; p &lt; len &amp;&amp; buf.charAt(p) == '0'; ++p) {
+            ++roundingStart;
+        }
+
+        if (roundingStart &lt; len) {
+            if (buf.charAt(roundingStart) &gt;= '5') {
+                int p;
+                for (p = roundingStart-1; p &gt;= 0 &amp;&amp; buf.charAt(p)=='9'; --p) {
+                    buf.setCharAt(p, '0');
+                }
+                if (p &gt;= 0) {
+                    buf.setCharAt(p, (char)(buf.charAt(p)+1));
+                } else {
+                    buf.insert(0, '1');
+                    ++roundingStart;
+                    ++exp;
+                }
+            }
+            buf.setLength(roundingStart);
+        }
+
+        //re-insert dot
+        if ((exp &lt; -5) || (exp &gt; 10)) {
+            buf.insert(1, '.');
+            --exp;
+        } else {
+            for (int i = len; i &lt; exp; ++i) {
+                buf.append('0');
+            }
+            for (int i = exp; i &lt;= 0; ++i) {
+                buf.insert(0, '0');
+            }
+            buf.insert((exp&lt;=0)? 1 : exp, '.');
+            exp = 0;
+        }
+        len = buf.length();
+       
+        //remove trailing dot and 0s.
+        int tail;
+        for (tail = len-1; tail &gt;= 0 &amp;&amp; buf.charAt(tail) == '0'; --tail) {
+            buf.deleteCharAt(tail);
+        }
+        if (tail &gt;= 0 &amp;&amp; buf.charAt(tail) == '.') {
+            buf.deleteCharAt(tail);
+        }
+
+        if (exp != 0) {
+            buf.append('E').append(exp);
+        }
+        if (v &lt; 0) {
+            buf.insert(0, '-');
+        }
+        return buf.toString();
+    }
+
+    /**
+       Renders a real number to a String (for user display).
+       @param maxLen the maximum total length of the resulting string
+       @param rounding the number of final digits to round
+     */
+    public static String doubleToString(double x, int maxLen, int rounding) {
+        return sizeTruncate(doubleToString(x, rounding), maxLen);
+    }
+
+    /**
+       Renders a complex number to a String (for user display).
+       @param maxLen the maximum total length of the resulting string
+       @param rounding the number of final digits to round
+     */
+    public static String complexToString(Complex x, int maxLen, int rounding) {
+        //System.out.println(&quot;&quot; + x.re + ' ' + x.im);
+        if (x.im == 0) {
+            return doubleToString(x.re, maxLen, rounding);
+        }
+
+        if (x.isNaN()) {
+            return &quot;NaN&quot;;
+        }
+
+        double xre = x.re, xim = x.im;
+        if (x.isInfinite()) {
+            if (!Double.isInfinite(xre)) {
+                xre = 0;
+            } else if (!Double.isInfinite(xim)) {
+                xim = 0;
+            }
+        }
+        if (xim == 0) {
+            return doubleToString(xre, maxLen, rounding);
+        }
+       
+        // insert plus between re &amp; im
+        boolean addPlus = xre != 0 &amp;&amp; !(xim &lt; 0);
+        String sre = xre == 0 ? &quot;&quot; : doubleToString(xre, rounding);
+        String sim = doubleToString(xim, rounding);
+        String finalMultiply = Double.isInfinite(xim) ? &quot;*&quot; : &quot;&quot;;
+
+        if (sim.equals(&quot;1&quot;)) {
+            sim = &quot;&quot;;
+        }
+        if (sim.equals(&quot;-1&quot;)) {
+            sim = &quot;-&quot;;
+        }
+
+        if (maxLen != LEN_UNLIMITED) {
+            --maxLen; // for final &quot;i&quot;
+            if (addPlus) {
+                --maxLen;
+            }
+            maxLen -= finalMultiply.length();
+
+            int sreLen = sre.length();
+            int simLen = sim.length();
+            int reduce = sreLen + simLen - maxLen;
+            if (reduce &gt; 0) {
+                int diff   = Math.abs(sreLen - simLen);
+                int rShort = reduce &gt; diff ? (reduce - diff)/2 : 0;
+                int rLong  = rShort + Math.min(reduce, diff);
+                int sreTarget = sreLen;
+                int simTarget = simLen;
+                if (sreLen &gt; simLen) {
+                    sreTarget -= rLong;
+                    simTarget -= rShort;                
+                } else {
+                    sreTarget -= rShort;
+                    simTarget -= rLong;
+                }
+                if (sreTarget + simTarget &gt; maxLen) {
+                    --simTarget;
+                }
+                sre = sizeTruncate(sre, sreTarget);
+                sim = sizeTruncate(sim, simTarget);
+            }
+        }
+        return sre + (addPlus ? &quot;+&quot; : &quot;&quot;) + sim + finalMultiply + 'i';
+    }
+}
+</pre>
+
+<p>Etiam eget augue et odio vulputate volutpat eget a nunc. Suspendisse
+nisl nunc, tempor ut luctus a, tincidunt ac metus. Aliquam interdum
+pellentesque nisi sed vehicula. Vivamus auctor ultrices erat sed
+mollis. Donec feugiat lacinia sapien convallis mattis. Donec ligula
+purus, porta at tincidunt at, gravida sit amet enim. Donec malesuada
+laoreet ante, non gravida lectus ultrices sed. Nunc in urna mi. Mauris
+sollicitudin vestibulum est, nec feugiat elit imperdiet vel. Sed
+facilisis commodo ligula non rhoncus. Integer commodo dictum dolor ac
+rutrum. Aenean non vulputate ligula. Aenean elit magna, ullamcorper eu
+tempus ac, gravida sed turpis. Quisque sit amet lectus venenatis neque
+interdum sollicitudin. Praesent venenatis, ipsum eu gravida porta,
+lacus massa dictum nibh, eu imperdiet ante nisl vel mauris. Aenean vel
+tincidunt diam.</p>
+
+<script type="text/javascript" src="../prettysyntax.js"></script>

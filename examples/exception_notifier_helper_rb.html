@@ -1,0 +1,123 @@
+<link rel="stylesheet"  type="text/css" href="../prettysyntax.css"></style>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus
+vitae nulla quis ante vehicula pretium faucibus nec sem. Integer
+gravida rhoncus sem, vitae ornare ante egestas ac. Pellentesque sapien
+sem, bibendum a varius ac, pharetra id ante. Nulla sit amet rhoncus
+tellus. Cum sociis natoque penatibus et magnis dis parturient montes,
+nascetur ridiculus mus. Curabitur viverra euismod nisi, quis
+sollicitudin ante pharetra ut. Fusce tempor interdum tincidunt.
+Vestibulum imperdiet, nisi a faucibus fermentum, magna libero feugiat
+ante, a scelerisque elit odio id felis. Quisque massa urna, posuere sit
+amet mattis ut, viverra et nulla. Praesent fermentum, augue at mattis
+interdum, diam massa aliquet neque, ac vulputate justo felis tristique
+justo.</p>
+
+<p>Nunc consectetur mi a eros imperdiet pulvinar. Donec ornare volutpat
+malesuada. Mauris mattis elementum imperdiet. Fusce vehicula lectus sed
+ipsum pellentesque venenatis. Maecenas neque sapien, bibendum eu
+placerat ac, iaculis eu augue. Fusce mauris turpis, pulvinar quis
+euismod nec, semper vitae tellus. Nam placerat justo non sapien
+consequat ullamcorper. Donec tempus vestibulum magna nec viverra. Etiam
+elementum leo non nunc commodo id facilisis nisl luctus. Pellentesque
+habitant morbi tristique senectus et netus et malesuada fames ac turpis
+egestas. Pellentesque et felis non nisl ultricies vulputate eu sed
+massa. Praesent semper feugiat lacus id congue. Nulla posuere euismod
+porttitor.</p>
+
+<pre name="code" class="ruby">
+require 'pp'
+
+# Copyright (c) 2005 Jamis Buck
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# &quot;Software&quot;), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+module ExceptionNotifierHelper
+  VIEW_PATH = &quot;views/exception_notifier&quot;
+  APP_PATH = &quot;#{RAILS_ROOT}/app/#{VIEW_PATH}&quot;
+  PARAM_FILTER_REPLACEMENT = &quot;[FILTERED]&quot;
+
+  def render_section(section)
+    RAILS_DEFAULT_LOGGER.info(&quot;rendering section #{section.inspect}&quot;)
+    summary = render_overridable(section).strip
+    unless summary.blank?
+      title = render_overridable(:title, :locals =&gt; { :title =&gt; section }).strip
+      &quot;#{title}\n\n#{summary.gsub(/^/, &quot;  &quot;)}\n\n&quot;
+    end
+  end
+
+  def render_overridable(partial, options={})
+    if File.exist?(path = &quot;#{APP_PATH}/_#{partial}.rhtml&quot;)
+      render(options.merge(:file =&gt; path, :use_full_path =&gt; false))
+    elsif File.exist?(path = &quot;#{File.dirname(__FILE__)}/../#{VIEW_PATH}/_#{partial}.rhtml&quot;)
+      render(options.merge(:file =&gt; path, :use_full_path =&gt; false))
+    else
+      &quot;&quot;
+    end
+  end
+
+  def inspect_model_object(model, locals={})
+    render_overridable(:inspect_model,
+      :locals =&gt; { :inspect_model =&gt; model,
+                   :show_instance_variables =&gt; true,
+                   :show_attributes =&gt; true }.merge(locals))
+  end
+
+  def inspect_value(value)
+    len = 512
+    result = object_to_yaml(value).gsub(/\n/, &quot;\n  &quot;).strip
+    result = result[0,len] + &quot;... (#{result.length-len} bytes more)&quot; if result.length &gt; len+20
+    result
+  end
+
+  def object_to_yaml(object)
+    object.to_yaml.sub(/^---\s*/m, &quot;&quot;)
+  end
+
+  def exclude_raw_post_parameters?
+    @controller &amp;&amp; @controller.respond_to?(:filter_parameters)
+  end
+  
+  def filter_sensitive_post_data_parameters(parameters)
+    exclude_raw_post_parameters? ? @controller.filter_parameters(parameters) : parameters
+  end
+  
+  def filter_sensitive_post_data_from_env(env_key, env_value)
+    return env_value unless exclude_raw_post_parameters?
+    return PARAM_FILTER_REPLACEMENT if (env_key =~ /RAW_POST_DATA/i)
+    return @controller.filter_parameters({env_key =&gt; env_value}).values[0]
+  end
+end
+</pre>
+
+<p>Etiam eget augue et odio vulputate volutpat eget a nunc. Suspendisse
+nisl nunc, tempor ut luctus a, tincidunt ac metus. Aliquam interdum
+pellentesque nisi sed vehicula. Vivamus auctor ultrices erat sed
+mollis. Donec feugiat lacinia sapien convallis mattis. Donec ligula
+purus, porta at tincidunt at, gravida sit amet enim. Donec malesuada
+laoreet ante, non gravida lectus ultrices sed. Nunc in urna mi. Mauris
+sollicitudin vestibulum est, nec feugiat elit imperdiet vel. Sed
+facilisis commodo ligula non rhoncus. Integer commodo dictum dolor ac
+rutrum. Aenean non vulputate ligula. Aenean elit magna, ullamcorper eu
+tempus ac, gravida sed turpis. Quisque sit amet lectus venenatis neque
+interdum sollicitudin. Praesent venenatis, ipsum eu gravida porta,
+lacus massa dictum nibh, eu imperdiet ante nisl vel mauris. Aenean vel
+tincidunt diam.</p>
+
+<script type="text/javascript" src="../prettysyntax.js"></script>

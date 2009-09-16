@@ -1,0 +1,270 @@
+<link rel="stylesheet"  type="text/css" href="../prettysyntax.css"></style>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus
+vitae nulla quis ante vehicula pretium faucibus nec sem. Integer
+gravida rhoncus sem, vitae ornare ante egestas ac. Pellentesque sapien
+sem, bibendum a varius ac, pharetra id ante. Nulla sit amet rhoncus
+tellus. Cum sociis natoque penatibus et magnis dis parturient montes,
+nascetur ridiculus mus. Curabitur viverra euismod nisi, quis
+sollicitudin ante pharetra ut. Fusce tempor interdum tincidunt.
+Vestibulum imperdiet, nisi a faucibus fermentum, magna libero feugiat
+ante, a scelerisque elit odio id felis. Quisque massa urna, posuere sit
+amet mattis ut, viverra et nulla. Praesent fermentum, augue at mattis
+interdum, diam massa aliquet neque, ac vulputate justo felis tristique
+justo.</p>
+
+<p>Nunc consectetur mi a eros imperdiet pulvinar. Donec ornare volutpat
+malesuada. Mauris mattis elementum imperdiet. Fusce vehicula lectus sed
+ipsum pellentesque venenatis. Maecenas neque sapien, bibendum eu
+placerat ac, iaculis eu augue. Fusce mauris turpis, pulvinar quis
+euismod nec, semper vitae tellus. Nam placerat justo non sapien
+consequat ullamcorper. Donec tempus vestibulum magna nec viverra. Etiam
+elementum leo non nunc commodo id facilisis nisl luctus. Pellentesque
+habitant morbi tristique senectus et netus et malesuada fames ac turpis
+egestas. Pellentesque et felis non nisl ultricies vulputate eu sed
+massa. Praesent semper feugiat lacus id congue. Nulla posuere euismod
+porttitor.</p>
+
+<pre name="code" class="rails">
+require 'abstract_unit'
+
+# The view_paths array must be set on Base and not LayoutTest so that LayoutTest's inherited
+# method has access to the view_paths array when looking for a layout to automatically assign.
+old_load_paths = ActionController::Base.view_paths
+
+ActionView::Template::register_template_handler :mab,
+  lambda { |template| template.source.inspect }
+
+ActionController::Base.view_paths = [ File.dirname(__FILE__) + '/../fixtures/layout_tests/' ]
+
+require &quot;fixture_template&quot;
+
+class LayoutTest &lt; ActionController::Base
+  def self.controller_path; 'views' end
+  def self._implied_layout_name; to_s.underscore.gsub(/_controller$/, '') ; end
+  self.view_paths = ActionController::Base.view_paths.dup
+end
+
+# Restore view_paths to previous value
+ActionController::Base.view_paths = old_load_paths
+
+class ProductController &lt; LayoutTest
+end
+
+class ItemController &lt; LayoutTest
+end
+
+class ThirdPartyTemplateLibraryController &lt; LayoutTest
+end
+
+module ControllerNameSpace
+end
+
+class ControllerNameSpace::NestedController &lt; LayoutTest
+end
+
+class MultipleExtensions &lt; LayoutTest
+end
+
+class LayoutAutoDiscoveryTest &lt; ActionController::TestCase
+  def setup
+    super
+    @request.host = &quot;www.nextangle.com&quot;
+  end
+
+  def test_application_layout_is_default_when_no_controller_match
+    @controller = ProductController.new
+    get :hello
+    assert_equal 'layout_test.rhtml hello.rhtml', @response.body
+  end
+
+  def test_controller_name_layout_name_match
+    @controller = ItemController.new
+    get :hello
+    assert_equal 'item.rhtml hello.rhtml', @response.body
+  end
+
+  def test_third_party_template_library_auto_discovers_layout
+    @controller = ThirdPartyTemplateLibraryController.new
+    get :hello
+    assert_response :success
+    assert_equal 'layouts/third_party_template_library.mab', @response.body
+  end
+
+  def test_namespaced_controllers_auto_detect_layouts1
+    @controller = ControllerNameSpace::NestedController.new
+    get :hello
+    assert_equal 'controller_name_space/nested.rhtml hello.rhtml', @response.body
+  end
+
+  def test_namespaced_controllers_auto_detect_layouts2
+    @controller = MultipleExtensions.new
+    get :hello
+    assert_equal 'multiple_extensions.html.erb hello.rhtml', @response.body.strip
+  end
+end
+
+class DefaultLayoutController &lt; LayoutTest
+end
+
+class AbsolutePathLayoutController &lt; LayoutTest
+  layout File.expand_path(File.expand_path(__FILE__) + '/../../fixtures/layout_tests/layouts/layout_test.rhtml')
+end
+
+class HasOwnLayoutController &lt; LayoutTest
+  layout 'item'
+end
+
+class PrependsViewPathController &lt; LayoutTest
+  def hello
+    prepend_view_path File.dirname(__FILE__) + '/../fixtures/layout_tests/alt/'
+    render :layout =&gt; 'alt'
+  end
+end
+
+class OnlyLayoutController &lt; LayoutTest
+  layout 'item', :only =&gt; &quot;hello&quot;
+end
+
+class ExceptLayoutController &lt; LayoutTest
+  layout 'item', :except =&gt; &quot;goodbye&quot;
+end
+
+class SetsLayoutInRenderController &lt; LayoutTest
+  def hello
+    render :layout =&gt; 'third_party_template_library'
+  end
+end
+
+class RendersNoLayoutController &lt; LayoutTest
+  def hello
+    render :layout =&gt; false
+  end
+end
+
+class LayoutSetInResponseTest &lt; ActionController::TestCase
+  include ActionView::TemplateHandlers
+  
+  def test_layout_set_when_using_default_layout
+    @controller = DefaultLayoutController.new
+    get :hello
+    assert @controller.template.layout.include?('layouts/layout_test')
+  end
+
+  def test_layout_set_when_set_in_controller
+    @controller = HasOwnLayoutController.new
+    get :hello
+    assert @controller.template.layout.include?('layouts/item')
+  end
+  
+  def test_layout_only_exception_when_included
+    @controller = OnlyLayoutController.new
+    get :hello
+    assert @controller.template.layout.include?('layouts/item')
+  end
+
+  def test_layout_only_exception_when_excepted
+    @controller = OnlyLayoutController.new
+    get :goodbye
+    assert !@response.body.include?(&quot;item.rhtml&quot;), &quot;#{@response.body.inspect} included 'item.rhtml'&quot;
+  end
+
+  def test_layout_except_exception_when_included
+    @controller = ExceptLayoutController.new
+    get :hello
+    assert @controller.template.layout.include?('layouts/item')
+  end
+
+  def test_layout_except_exception_when_excepted
+    @controller = ExceptLayoutController.new
+    get :goodbye
+    assert !@response.body.include?(&quot;item.rhtml&quot;), &quot;#{@response.body.inspect} included 'item.rhtml'&quot;
+  end
+
+  def test_layout_set_when_using_render
+    @controller = SetsLayoutInRenderController.new
+    get :hello
+    assert @controller.template.layout.include?('layouts/third_party_template_library')
+  end
+
+  def test_layout_is_not_set_when_none_rendered
+    @controller = RendersNoLayoutController.new
+    get :hello
+    assert_nil @controller.template.layout
+  end
+
+  def test_layout_is_picked_from_the_controller_instances_view_path
+    @controller = PrependsViewPathController.new
+    get :hello
+    assert @controller.template.layout =~ /layouts\/alt\.\w+/
+  end
+
+  def test_absolute_pathed_layout
+    @controller = AbsolutePathLayoutController.new
+    get :hello
+    assert_equal &quot;layout_test.rhtml hello.rhtml&quot;, @response.body.strip
+  end
+end
+
+class RenderWithTemplateOptionController &lt; LayoutTest
+  def hello
+    render :template =&gt; 'alt/hello'
+  end
+end
+
+class SetsNonExistentLayoutFile &lt; LayoutTest
+  layout &quot;nofile.rhtml&quot;
+end
+
+class LayoutExceptionRaised &lt; ActionController::TestCase
+  def test_exception_raised_when_layout_file_not_found
+    @controller = SetsNonExistentLayoutFile.new
+    assert_raise(ActionView::MissingTemplate) { get :hello }
+  end
+end
+
+class LayoutStatusIsRendered &lt; LayoutTest
+  def hello
+    render :status =&gt; 401
+  end
+end
+
+class LayoutStatusIsRenderedTest &lt; ActionController::TestCase
+  def test_layout_status_is_rendered
+    @controller = LayoutStatusIsRendered.new
+    get :hello
+    assert_response 401
+  end
+end
+
+unless RUBY_PLATFORM =~ /(:?mswin|mingw|bccwin)/
+  class LayoutSymlinkedTest &lt; LayoutTest
+    layout &quot;symlinked/symlinked_layout&quot;
+  end
+
+  class LayoutSymlinkedIsRenderedTest &lt; ActionController::TestCase
+    def test_symlinked_layout_is_rendered
+      @controller = LayoutSymlinkedTest.new
+      get :hello
+      assert_response 200
+      assert @controller.template.layout.include?(&quot;layouts/symlinked/symlinked_layout&quot;)
+    end
+  end
+end
+</pre>
+
+<p>Etiam eget augue et odio vulputate volutpat eget a nunc. Suspendisse
+nisl nunc, tempor ut luctus a, tincidunt ac metus. Aliquam interdum
+pellentesque nisi sed vehicula. Vivamus auctor ultrices erat sed
+mollis. Donec feugiat lacinia sapien convallis mattis. Donec ligula
+purus, porta at tincidunt at, gravida sit amet enim. Donec malesuada
+laoreet ante, non gravida lectus ultrices sed. Nunc in urna mi. Mauris
+sollicitudin vestibulum est, nec feugiat elit imperdiet vel. Sed
+facilisis commodo ligula non rhoncus. Integer commodo dictum dolor ac
+rutrum. Aenean non vulputate ligula. Aenean elit magna, ullamcorper eu
+tempus ac, gravida sed turpis. Quisque sit amet lectus venenatis neque
+interdum sollicitudin. Praesent venenatis, ipsum eu gravida porta,
+lacus massa dictum nibh, eu imperdiet ante nisl vel mauris. Aenean vel
+tincidunt diam.</p>
+
+<script type="text/javascript" src="../prettysyntax.js"></script>

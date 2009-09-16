@@ -1,0 +1,75 @@
+== prettysyntax - A javascript-based code syntax highlighter
+
+prettysyntax is a tool to make code on web pages/blogs look, well, prettier.
+
+== Installation
+
+Add the prettysytax.css and prettysyntax.js files to your web server.
+
+Include the prettysyntax CSS file towards the top of your web page. e.g.
+
+  <link rel="stylesheet" type="text/css" href="/stylesheets/prettysyntax.css"></style>
+
+Include the prettysyntax javascript file towards the footer of your web
+page. e.g.
+
+  <script type="text/javascript" src="/javascripts/prettysyntax.js"></script>
+
+== Usage
+
+Put any code on your web page that you want syntax highlighted inside an HTML
+PRE block, give that block a *name* attribute of _code_ and a *class* attribute
+of one of the supported prettysyntax languages:
+
+* java
+* javascript
+* ruby
+* rails (ruby + some rails-specific extensions)
+* css
+
+For example:
+
+  <pre name="code" class="rails">
+  module Facebook
+  class FBMLController &lt; ActionController::Base
+    session :off
+
+    around_filter do |controller, block|
+      if controller.fbsession.is_valid?
+        Facebook.with_fbsession(controller.fbsession) do
+          block.call
+        end
+      else
+        logger.debug 'No valid facebook session'
+        block.call
+      end
+    end
+
+    def fbparams
+      @fbparams ||= {};
+
+      if (@fbparams.length &lt;= 0)
+        @fbparams = fbsession.get_fb_sig_params(params)
+      end
+
+      return @fbparams
+    end
+  end
+  </pre>
+
+<b>SPECIAL NOTE</b>: You will have to escape HTML entities before inserting
+code inside a PRE block, at least if you are using Blogger (other blog
+software may be more helpful; wordpress has some nice plugins that automatically
+escape entities). Editors like Scream[http://www.screem.org/] on Linux
+(Edit > Block Operations > Encode Entities) can do the grunt work for you.
+
+== Other Syntax Highlighters
+
+SyntaxHighlighter[http://alexgorbatchev.com/wiki/SyntaxHighlighter] is probably
+the most commonly used code highlighter on the web. A variant of this is used
+by googlecode[http://code.google.com/].
+
+== License
+
+prettysyntax is licensed under the terms of the the Apache 2.0 license. See
+http://www.apache.org/licenses/LICENSE-2.0 for details.

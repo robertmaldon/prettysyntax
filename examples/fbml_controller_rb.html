@@ -1,0 +1,141 @@
+<link rel="stylesheet"  type="text/css" href="../prettysyntax.css"></style>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus
+vitae nulla quis ante vehicula pretium faucibus nec sem. Integer
+gravida rhoncus sem, vitae ornare ante egestas ac. Pellentesque sapien
+sem, bibendum a varius ac, pharetra id ante. Nulla sit amet rhoncus
+tellus. Cum sociis natoque penatibus et magnis dis parturient montes,
+nascetur ridiculus mus. Curabitur viverra euismod nisi, quis
+sollicitudin ante pharetra ut. Fusce tempor interdum tincidunt.
+Vestibulum imperdiet, nisi a faucibus fermentum, magna libero feugiat
+ante, a scelerisque elit odio id felis. Quisque massa urna, posuere sit
+amet mattis ut, viverra et nulla. Praesent fermentum, augue at mattis
+interdum, diam massa aliquet neque, ac vulputate justo felis tristique
+justo.</p>
+
+<p>Nunc consectetur mi a eros imperdiet pulvinar. Donec ornare volutpat
+malesuada. Mauris mattis elementum imperdiet. Fusce vehicula lectus sed
+ipsum pellentesque venenatis. Maecenas neque sapien, bibendum eu
+placerat ac, iaculis eu augue. Fusce mauris turpis, pulvinar quis
+euismod nec, semper vitae tellus. Nam placerat justo non sapien
+consequat ullamcorper. Donec tempus vestibulum magna nec viverra. Etiam
+elementum leo non nunc commodo id facilisis nisl luctus. Pellentesque
+habitant morbi tristique senectus et netus et malesuada fames ac turpis
+egestas. Pellentesque et felis non nisl ultricies vulputate eu sed
+massa. Praesent semper feugiat lacus id congue. Nulla posuere euismod
+porttitor.</p>
+
+<pre name="code" class="rails">
+module Facebook
+  class FBMLController &lt; ActionController::Base
+    session :off
+
+    around_filter do |controller, block|
+      if controller.fbsession.is_valid?
+        Facebook.with_fbsession(controller.fbsession) do
+          block.call
+        end
+      else
+        logger.debug 'No valid facebook session'
+        block.call
+      end
+    end
+
+    def fbparams
+      @fbparams ||= {};
+
+      if (@fbparams.length &lt;= 0)
+        @fbparams = fbsession.get_fb_sig_params(params)
+      end
+
+      return @fbparams
+    end
+
+    def fbfriends
+      fbparams['friends'].split(',').map(&amp;:to_i)
+    end
+
+    def fbsession
+      unless @fbsession
+        @fbsession = RFacebook::FacebookWebSession.new(Facebook.api_key, Facebook.secret_key)
+       
+        session_key = fbparams[&quot;session_key&quot;]
+        user        = fbparams[&quot;user&quot;]
+        expires     = fbparams[&quot;expires&quot;]
+
+        if session_key &amp;&amp; user &amp;&amp; expires
+          @fbsession.activate_with_previous_session(session_key, user, expires)
+        end
+      end
+
+      return @fbsession
+    end
+
+    def require_facebook_install
+      if in_canvas? &amp;&amp; !fbsession.is_valid?
+        redirect_to fbsession.get_install_url
+      end
+    end
+
+    def in_canvas?
+      return fbparams[&quot;in_canvas&quot;] != nil
+    end
+
+    def redirect_to(url)
+      if in_canvas?
+        render :text =&gt; &quot;&lt;fb:redirect url=\&quot;#{url}\&quot; /&gt;&quot;        
+      else
+        super url
+      end
+    end
+
+    def url_for(options = {}, *params)
+      if options.is_a?(String)
+        return options
+      elsif options.delete(:canvas) == false
+        return super(options, *params)
+      else
+        # Get the path that Rails would normally generate
+        path = super(options.merge(:only_path =&gt; true), *params)
+
+        # Rewrite it if it begins with our callback path (ex /fb)
+        if path.starts_with?(Facebook.callback_path)
+          # Remove the callback path: &quot;/fb/path/to/x&quot; becomes &quot;path/to/x&quot;
+          newpath = path[Facebook.callback_path.length+1..-1]
+
+          # Done if we're not adding the canvas path
+          return newpath if options.delete(:only_path_no_prefix)
+
+          # Append the canvas path: &quot;path/to/x&quot; becomes &quot;/myapp/path/to/x&quot;
+          newpath = Facebook.canvas_path + '/' + newpath
+
+          # Done if we're only getting the path
+          return newpath if options.delete(:only_path)
+
+          # Append the facebook domain: &quot;/myapp/path/to/x&quot; becomes &quot;http://apps.facebook.com/myapp/path/to/x&quot;
+          newpath = 'http://apps.facebook.com' + newpath
+          return newpath
+        else
+          raise StandardError, &quot;#{path} does not begin with #{Facebook.callback_path}&quot;
+        end
+      end
+    end
+  end
+end
+</pre>
+
+<p>Etiam eget augue et odio vulputate volutpat eget a nunc. Suspendisse
+nisl nunc, tempor ut luctus a, tincidunt ac metus. Aliquam interdum
+pellentesque nisi sed vehicula. Vivamus auctor ultrices erat sed
+mollis. Donec feugiat lacinia sapien convallis mattis. Donec ligula
+purus, porta at tincidunt at, gravida sit amet enim. Donec malesuada
+laoreet ante, non gravida lectus ultrices sed. Nunc in urna mi. Mauris
+sollicitudin vestibulum est, nec feugiat elit imperdiet vel. Sed
+facilisis commodo ligula non rhoncus. Integer commodo dictum dolor ac
+rutrum. Aenean non vulputate ligula. Aenean elit magna, ullamcorper eu
+tempus ac, gravida sed turpis. Quisque sit amet lectus venenatis neque
+interdum sollicitudin. Praesent venenatis, ipsum eu gravida porta,
+lacus massa dictum nibh, eu imperdiet ante nisl vel mauris. Aenean vel
+tincidunt diam.</p>
+
+<script type="text/javascript" src="../prettysyntax.js"></script>

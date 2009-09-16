@@ -1,0 +1,263 @@
+<link rel="stylesheet"  type="text/css" href="../prettysyntax.css"></style>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus
+vitae nulla quis ante vehicula pretium faucibus nec sem. Integer
+gravida rhoncus sem, vitae ornare ante egestas ac. Pellentesque sapien
+sem, bibendum a varius ac, pharetra id ante. Nulla sit amet rhoncus
+tellus. Cum sociis natoque penatibus et magnis dis parturient montes,
+nascetur ridiculus mus. Curabitur viverra euismod nisi, quis
+sollicitudin ante pharetra ut. Fusce tempor interdum tincidunt.
+Vestibulum imperdiet, nisi a faucibus fermentum, magna libero feugiat
+ante, a scelerisque elit odio id felis. Quisque massa urna, posuere sit
+amet mattis ut, viverra et nulla. Praesent fermentum, augue at mattis
+interdum, diam massa aliquet neque, ac vulputate justo felis tristique
+justo.</p>
+
+<p>Nunc consectetur mi a eros imperdiet pulvinar. Donec ornare volutpat
+malesuada. Mauris mattis elementum imperdiet. Fusce vehicula lectus sed
+ipsum pellentesque venenatis. Maecenas neque sapien, bibendum eu
+placerat ac, iaculis eu augue. Fusce mauris turpis, pulvinar quis
+euismod nec, semper vitae tellus. Nam placerat justo non sapien
+consequat ullamcorper. Donec tempus vestibulum magna nec viverra. Etiam
+elementum leo non nunc commodo id facilisis nisl luctus. Pellentesque
+habitant morbi tristique senectus et netus et malesuada fames ac turpis
+egestas. Pellentesque et felis non nisl ultricies vulputate eu sed
+massa. Praesent semper feugiat lacus id congue. Nulla posuere euismod
+porttitor.</p>
+
+<pre name="code" class="java">
+/*
+ * Copyright 2005, Nick Galbreath -- nickg [at] modp [dot] com
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *   Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *   Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *   Neither the name of the modp.com nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * This is the standard &quot;new&quot; BSD license:
+ * http://www.opensource.org/licenses/bsd-license.php
+ */
+
+package com.modp.random;
+
+/**
+ * A random number generator based on Celluar Automaton Rule 30.
+ *
+ * &lt;p&gt;
+ * This implementation uses an circular array of 192 cells.
+ * Each cell is updated, in parallel, based on the three values, the left neighbor, itself, and the right neighbor.
+ * according to &quot;rule 30&quot; defined by:
+ * &lt;/p&gt;
+ * &lt;table border=&quot;1&quot; style=&quot;text-align: center&quot;&gt;
+ * &lt;tr&gt;&lt;td&gt;111&lt;/td&gt;&lt;td&gt;110&lt;/td&gt;&lt;td&gt;101&lt;/td&gt;&lt;td&gt;100&lt;/td&gt;&lt;td&gt;011&lt;/td&gt;&lt;td&gt;010&lt;/td&gt;&lt;td&gt;001&lt;/td&gt;&lt;td&gt;000&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt; 0 &lt;/td&gt;&lt;td&gt; 0 &lt;/td&gt;&lt;td&gt; 0 &lt;/td&gt;&lt;td&gt; 1 &lt;/td&gt;&lt;td&gt; 1 &lt;/td&gt;&lt;td&gt; 1 &lt;/td&gt;&lt;td&gt; 1 &lt;/td&gt;&lt;td&gt; 0 &lt;/td&gt;&lt;/tr&gt;
+ * &lt;/table&gt;
+ * &lt;p&gt;
+ * The central or middle cell contains the &quot;random&quot; value.
+ * &lt;/p&gt;
+ *
+ * &lt;p&gt;
+ * Using a seed of &lt;code&gt;1L &lt;&lt; 32&lt;/code&gt; and subsequent calls to
+ * &lt;code&gt;next(1)&lt;/code&gt; will produce a sequence of bits equivalent to
+ * (in &lt;i&gt;Mathematica&lt;/i&gt;):
+ * &lt;/p&gt;
+ * &lt;pre&gt;
+ * CellularAutomaton[30,
+ *   ReplacePart[Table[0, {192}], 1, 192/2],
+ *   &lt;i&gt;n&lt;/i&gt;,
+ *   {All, {192/2 - 1}}]
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;WARNING: Rule 30 has some obvious practical problems.  Some initial conditions
+ * will result in loops or terminate (e.g. all 0s).
+ * These problems are &lt;b&gt;NOT&lt;/b&gt; corrected here.
+ * This is a &quot;pure&quot; implementation designed for research (especially since this
+ * is quite slow in java)
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * You may find the following references useful:
+ * &lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;a href=&quot;http://atlas.wolfram.com/01/01/30/&quot;&gt;http://atlas.wolfram.com/01/01/30/&lt;/a&gt;&lt;/li&gt;
+ * &lt;li&gt;&lt;a href=&quot;http://en.wikipedia.org/wiki/Cellular_automata&quot;&gt;http://en.wikipedia.org/wiki/Cellular_automata&lt;/a&gt;&lt;/li&gt;
+ * &lt;li&gt;&lt;a href=&quot;http://www.wolframscience.com/nksonline/page-974b-text&quot;&gt;http://www.wolframscience.com/nksonline/page-974b-text&lt;/a&gt;&lt;/li&gt;
+ * &lt;li&gt;&lt;a href=&quot;http://www.google.com/search?q=US+Patent+4,691,291&quot;&gt;US Patent 4,691,291&lt;/a&gt;
+ *   (Granted, September 1, 1987, so it should expire in 2005)&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @author Nick Galbreath -- nickg [at] modp [dot] com
+ * @version 1 -- 06-Jul-2005
+ */
+public class Rule30Cells192 implements RandomGenerator {
+
+    // the internal state
+    private long w0;
+    private long w1;
+    private long w2;
+
+
+    /**
+     *  Default constructor.
+     * Probably uses current time to seed generator
+     */
+    public Rule30Cells192() {
+        setSeed(System.currentTimeMillis());
+    }
+
+    /**
+     * Seeded constructor.
+     *
+     * Input seed will be used as bits 64-128 in the generator
+     *
+     * @param arg0
+     */
+    public Rule30Cells192(final long arg0) {
+        setSeed(arg0);
+    }
+
+    /**
+     * Constructor with full seed
+     *
+     * @param w0
+     * @param w1
+     * @param w2
+     */
+    public Rule30Cells192(final long w0, final long w1, final long w2) {
+        setSeed(w0,w1,w2);
+    }
+
+    /**
+     * Set the seed using a single long value.
+     *
+     * This will be used for bits 64-128.
+     */
+    public void setSeed(final long seed) {
+        setSeed(0L,seed, 0L);
+    }
+
+    /**
+     * Get the internal state of the generator.
+     *
+     * This is used for unit-testing.  The data
+     * is bitsliced so it won't make pretty pictures
+     * if you try and plot it (or maybe it will!)
+     *
+     * @return a long array with 3 values.
+     */
+    public long[] getState() {
+        long[] result = new long[3];
+        result[0] = w0;
+        result[1] = w1;
+        result[2] = w2;
+        return result;
+    }
+
+    /**
+     * Set the seed using 3 long values.
+     *
+     * The three 64-bit long value define the initial starting conditions
+     * and the bit values are layed out as a bit-string from left to right
+     * &lt;pre&gt;
+     * w0-0 w0-1 .... w0-63 w1-0 w1-1 .... w1-63 w2-0 w2-1 ... w2-63
+     * &lt;/pre&gt;
+     *
+     * To get the clasical Rule 30 with &quot;black dot&quot; in the middle
+     * Use &lt;code&gt;(0L, 1L &lt;&lt; 32, 0L)&lt;/code&gt;
+     *
+     * TODO: need to explain bitsliced layout
+     *
+     * @param w0 bits 0-63
+     * @param w1 bits 64-127
+     * @param w2 bits 128-191
+     */
+    public void setSeed(final long w0, final long w1, final long w2) {
+        final int BLOCKS = 3;
+        final int BITS_PER_BLOCK = 64;
+
+        // this loop can certainly be unrolled, and the use of array eliminated
+        // however this isn't critical and this shows how to extend
+        // the algorithm for more blocks
+        long input[] = {w0, w1, w2};      // pack into array to simply algorithm below
+        long output[] = new long[BLOCKS]; // tmp variable for holding state
+
+        for (int j = 0; j &lt; BLOCKS * BITS_PER_BLOCK; ++j) {
+            int inputBlock = j / BITS_PER_BLOCK;
+            int inputPos = j % BITS_PER_BLOCK;
+            int outputBlock = j % BLOCKS;
+            int outputPos = j / BLOCKS;
+
+            // get the bit we are working on
+            // if it's 0, nothing to do
+            // if it's 1, set the appropriate bit
+            // MAYBE: use table instead of shifting.
+            if ((input[inputBlock] &amp; (1L &lt;&lt; inputPos)) != 0L) {
+                output[outputBlock] |= (1L &lt;&lt; outputPos);
+            }
+        }
+        this.w0 = output[0];
+        this.w1 = output[1];
+        this.w2 = output[2];
+    }
+
+    /*
+     * Generate up to 32 random bits
+     *
+     * @see java.util.Random#next(int)
+     */
+    public int next(final int bits) {
+        int result = 0;
+        long t0, t1, t2;
+
+
+        // ROTATE LEFT foo = (foo &lt;&lt; 1) | (foo &gt;&gt;&gt; 63);
+        // ROTATE RIGHT foo = (foo &gt;&gt; 1) | (foo &lt;&lt; 63);
+        for (int j = bits; j != 0; --j) {
+            result = (result &lt;&lt; 1) | (int) ((w0 &gt;&gt;&gt; 32) &amp; 1L);
+            t0 = ((w2 &gt;&gt;&gt; 1) | (w2 &lt;&lt; 63)) ^ (w0 | w1);
+            t2 = w1 ^ (w2 | ((w0 &lt;&lt; 1) | (w0 &gt;&gt;&gt; 63)));
+            t1 = w0 ^ (w1 | w2);
+            w0 = t0; w1 = t1; w2 = t2;
+        }
+        return result;
+    }
+}
+</pre>
+
+<p>Etiam eget augue et odio vulputate volutpat eget a nunc. Suspendisse
+nisl nunc, tempor ut luctus a, tincidunt ac metus. Aliquam interdum
+pellentesque nisi sed vehicula. Vivamus auctor ultrices erat sed
+mollis. Donec feugiat lacinia sapien convallis mattis. Donec ligula
+purus, porta at tincidunt at, gravida sit amet enim. Donec malesuada
+laoreet ante, non gravida lectus ultrices sed. Nunc in urna mi. Mauris
+sollicitudin vestibulum est, nec feugiat elit imperdiet vel. Sed
+facilisis commodo ligula non rhoncus. Integer commodo dictum dolor ac
+rutrum. Aenean non vulputate ligula. Aenean elit magna, ullamcorper eu
+tempus ac, gravida sed turpis. Quisque sit amet lectus venenatis neque
+interdum sollicitudin. Praesent venenatis, ipsum eu gravida porta,
+lacus massa dictum nibh, eu imperdiet ante nisl vel mauris. Aenean vel
+tincidunt diam.</p>
+
+<script type="text/javascript" src="../prettysyntax.js"></script>
